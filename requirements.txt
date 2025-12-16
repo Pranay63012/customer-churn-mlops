@@ -1,9 +1,10 @@
-pandas
-numpy
-scikit-learn
-mlflow
 fastapi
 uvicorn
+scikit-learn
+pandas
+numpy
+mlflow
+joblib
 pydantic
-pyyaml
+requests
 streamlit
