@@ -1,98 +1,177 @@
 import streamlit as st
 import requests
 
-
-API_URL = "http://127.0.0.1:8000/predict"
+API_URL = "https://customer-churn-mlops.onrender.com/predict"
 
 st.set_page_config(page_title="Customer Churn Predictor", layout="centered")
-st.title("📊 Customer Churn Prediction System")
 
-st.markdown("Enter customer details below to predict churn risk.")
-
-gender = st.selectbox("Gender", ["Male", "Female"])
-senior = st.selectbox("Senior Citizen", ["No", "Yes"])
-partner = st.selectbox("Has Partner", ["Yes", "No"])
-dependents = st.selectbox("Has Dependents", ["Yes", "No"])
-
-tenure = st.slider("Customer Tenure (Months)", 0, 72, 12)
-
-internet = st.selectbox(
-    "Internet Service Type",
-    ["DSL", "Fiber optic", "No"]
+st.title("📉 Customer Churn Risk Predictor")
+st.write(
+    "This tool helps predict whether a customer is **likely to leave the service**, "
+    "based on their subscription and usage details."
 )
 
-contract = st.selectbox(
-    "Contract Type",
-    ["Month-to-month", "One year", "Two year"]
-)
+st.divider()
 
-payment = st.selectbox(
-    "Payment Method",
-    [
-        "Electronic check",
-        "Mailed check",
-        "Bank transfer (automatic)",
-        "Credit card (automatic)",
-    ],
-)
+with st.form("churn_form"):
 
-monthly = st.number_input("Monthly Charges (₹)", min_value=0.0, step=1.0)
-total = st.number_input("Total Charges Paid (₹)", min_value=0.0, step=10.0)
+    st.subheader("👤 Customer Profile")
 
-if st.button("🔍 Predict Churn Risk"):
+    gender = st.radio("Customer Gender", ["Male", "Female"], horizontal=True)
+
+    senior = st.radio(
+        "Is the customer a senior citizen (60+)?",
+        ["No", "Yes"],
+        horizontal=True
+    )
+
+    partner = st.radio(
+        "Does the customer have a partner?",
+        ["No", "Yes"],
+        horizontal=True
+    )
+
+    dependents = st.radio(
+        "Does the customer have dependents?",
+        ["No", "Yes"],
+        horizontal=True
+    )
+
+    tenure = st.slider(
+        "How long has the customer been using the service? (months)",
+        min_value=0,
+        max_value=72,
+        value=12
+    )
+
+    st.divider()
+    st.subheader("📞 Services Used")
+
+    phone = st.radio("Phone Service", ["Yes", "No"], horizontal=True)
+
+    multiple = st.selectbox(
+        "Multiple phone lines",
+        ["No", "Yes", "No phone service"]
+    )
+
+    internet = st.selectbox(
+        "Internet Service Type",
+        ["DSL", "Fiber optic", "No"]
+    )
+
+    online_security = st.selectbox(
+        "Online Security Add-on",
+        ["No", "Yes", "No internet service"]
+    )
+
+    online_backup = st.selectbox(
+        "Online Backup Service",
+        ["No", "Yes", "No internet service"]
+    )
+
+    device_protection = st.selectbox(
+        "Device Protection Plan",
+        ["No", "Yes", "No internet service"]
+    )
+
+    tech_support = st.selectbox(
+        "Technical Support",
+        ["No", "Yes", "No internet service"]
+    )
+
+    streaming_tv = st.selectbox(
+        "Streaming TV",
+        ["No", "Yes", "No internet service"]
+    )
+
+    streaming_movies = st.selectbox(
+        "Streaming Movies",
+        ["No", "Yes", "No internet service"]
+    )
+
+    st.divider()
+    st.subheader("💳 Billing Information")
+
+    contract = st.selectbox(
+        "Contract Type",
+        ["Month-to-month", "One year", "Two year"]
+    )
+
+    paperless = st.radio(
+        "Paperless Billing",
+        ["Yes", "No"],
+        horizontal=True
+    )
+
+    payment = st.selectbox(
+        "Payment Method",
+        [
+            "Electronic check",
+            "Mailed check",
+            "Bank transfer (automatic)",
+            "Credit card (automatic)"
+        ]
+    )
+
+    monthly = st.slider(
+        "Monthly Charges (₹)",
+        min_value=0.0,
+        max_value=10000.0,
+        value=89.0,
+        step=10.0
+    )
+
+    total = st.slider(
+        "Total Charges Paid (₹)",
+        min_value=0.0,
+        max_value=200000.0,
+        value=7500.0,
+        step=100.0
+    )
+
+    submit = st.form_submit_button("🔍 Predict Churn Risk")
+
+if submit:
     payload = {
-    "gender": gender,
-    "SeniorCitizen": 1 if senior == "Yes" else 0,
-    "Partner": partner,
-    "Dependents": dependents,
-    "tenure": tenure,
+        "gender": gender,
+        "SeniorCitizen": 1 if senior == "Yes" else 0,
+        "Partner": partner,
+        "Dependents": dependents,
+        "tenure": tenure,
+        "PhoneService": phone,
+        "MultipleLines": multiple,
+        "InternetService": internet,
+        "OnlineSecurity": online_security,
+        "OnlineBackup": online_backup,
+        "DeviceProtection": device_protection,
+        "TechSupport": tech_support,
+        "StreamingTV": streaming_tv,
+        "StreamingMovies": streaming_movies,
+        "Contract": contract,
+        "PaperlessBilling": paperless,
+        "PaymentMethod": payment,
+        "MonthlyCharges": monthly,
+        "TotalCharges": total
+    }
 
-    "PhoneService": "Yes",
-    "MultipleLines": "No",
+    with st.spinner("Analyzing customer risk..."):
+        try:
+            response = requests.post(API_URL, json=payload)
+            response.raise_for_status()
+            result = response.json()
 
-    "InternetService": internet,
-    "OnlineSecurity": "No",
-    "OnlineBackup": "No",
-    "DeviceProtection": "No",
-    "TechSupport": "No",
-    "StreamingTV": "No",
-    "StreamingMovies": "No",
+            churn_label = result["churn_prediction"]
+            churn_prob = round(result["churn_probability"] * 100, 2)
 
-    "Contract": contract,
-    "PaperlessBilling": "Yes",
-    "PaymentMethod": payment,
+            st.divider()
+            st.subheader("📊 Prediction Result")
 
-    "MonthlyCharges": monthly,
-    "TotalCharges": total,
-}
+            if churn_label == 1:
+                st.error(f"🚨 High Churn Risk ({churn_prob}%)")
+                st.write("⚠️ This customer is **likely to leave** the service.")
+            else:
+                st.success(f"✅ Low Churn Risk ({churn_prob}%)")
+                st.write("👍 This customer is **likely to stay**.")
 
-
-    response = requests.post(API_URL, json=payload)
-
-    if response.status_code == 200:
-        result = response.json()
-        prob = result["churn_probability"]
-
-        if prob >= 0.6:
-            st.error("❌ Customer is likely to leave")
-            st.markdown("### 🔴 Risk Level: HIGH")
-            st.markdown(f"**Churn Probability:** {prob * 100:.1f}%")
-            st.markdown("### 💡 Recommended Action")
-            st.markdown("- Offer retention discount\n- Suggest long-term contract")
-
-        elif prob >= 0.3:
-            st.warning("⚠️ Customer may leave")
-            st.markdown("### 🟡 Risk Level: MEDIUM")
-            st.markdown(f"**Churn Probability:** {prob * 100:.1f}%")
-            st.markdown("### 💡 Recommended Action")
-            st.markdown("- Provide better support\n- Personalized offers")
-
-        else:
-            st.success("✅ Customer is likely to stay")
-            st.markdown("### 🟢 Risk Level: LOW")
-            st.markdown(f"**Churn Probability:** {prob * 100:.1f}%")
-            st.markdown("### 💡 Recommended Action")
-            st.markdown("- No immediate action required")
-
-    else:
-        st.error("API error. Please try again.")
+        except Exception:
+            st.error("❌ Unable to connect to prediction service. Please try again later.")
